@@ -98,6 +98,25 @@ const BASE_CSS = `
 .za-sec { padding:88px 0; }
 .za-sec + .za-sec { border-top:1px solid var(--line); }
 
+/* -------- Marketing strip -------- */
+.za-strip { border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+.za-strip-grid { display:grid; grid-template-columns:repeat(3,1fr); }
+@media(max-width:760px){ .za-strip-grid { grid-template-columns:1fr; } }
+.za-strip-cell {
+  padding:40px 28px; border-right:1px solid var(--line);
+}
+.za-strip-cell:last-child { border-right:none; }
+@media(max-width:760px){
+  .za-strip-cell { border-right:none; border-bottom:1px solid var(--line); padding:32px 4px; }
+  .za-strip-cell:last-child { border-bottom:none; }
+}
+.za-strip-cell h4 {
+  font-family:'Fraunces',serif; font-weight:400; font-size:19px;
+  margin-bottom:8px; color:var(--text);
+}
+.za-strip-cell h4 span { color:var(--gold); }
+.za-strip-cell p { font-size:14px; color:var(--muted); line-height:1.55; }
+
 /* -------- Nav -------- */
 .za-nav {
   position:sticky; top:0; z-index:50;
@@ -556,10 +575,10 @@ const VW = [
 ];
 
 const PILLARS = [
-  { icon:"⛁", title:"Data Engineering",  desc:"Pipelines fiables, testés, documentés, versionnés.",         tags:["SQL","dbt","Python"] },
-  { icon:"▦", title:"BI & Reporting",     desc:"Dashboards exécutifs conçus pour la décision.",              tags:["Power BI","DAX","Power Query"] },
-  { icon:"Σ", title:"Finance & FP&A",     desc:"Budget vs réel, forecasting, variances, design KPIs.",       tags:["Budgeting","Forecasting","Variances"] },
-  { icon:"⇶", title:"Cloud & Scalabilité",desc:"Entrepôt cloud + transformation dbt qui tient la croissance.",tags:["BigQuery","dbt Cloud"] },
+  { icon:"⊞", title:"Data Analytics",    desc:"Exploration, nettoyage et analyse de vos données pour en sortir ce qui compte.",  tags:["SQL","Python","Pandas"] },
+  { icon:"▦", title:"BI & Reporting",     desc:"Dashboards exécutifs lisibles, conçus pour la décision, pas la décoration.",     tags:["Power BI","DAX","Power Query"] },
+  { icon:"Σ", title:"Finance & FP&A",     desc:"Budget vs réel, forecasting, variances, design de KPIs qui parlent au CODIR.", tags:["Budgeting","Forecasting","Variances"] },
+  { icon:"⇄", title:"Modélisation data",  desc:"Données structurées, fiables et documentées avec dbt, prêtes à être analysées.",tags:["dbt","Modélisation","Tests"] },
 ];
 
 const CERTS = [
@@ -632,8 +651,8 @@ const SERVICES = [
     ],
   },
   {
-    slug:"data-engineering-dbt", title:"Data Engineering (dbt)", duration:"2–3 semaines", pricing:"Devis selon scope",
-    desc:"Vos pipelines migrés vers une modélisation scalable et testée.",
+    slug:"data-engineering-dbt", title:"Structuration de données (dbt)", duration:"2–3 semaines", pricing:"Devis selon scope",
+    desc:"Vos données mises au propre, fiables et prêtes à être analysées.",
     points:["Optimisation des pipelines","Migration vers dbt","Tests + documentation best practices","Setup CI/CD","Repo GitHub + dbt docs"],
     detailIntro:"Vos transformations SQL sont éparpillées ou fragiles ? Cette offre migre le tout vers dbt : modélisation versionnée, testée, documentée — une base saine pour construire.",
     who:["Pipelines SQL existants mais fragiles","Équipe data qui veut adopter dbt","Besoin de fiabiliser avant de scaler"],
@@ -857,15 +876,36 @@ function ContactForm({initial}){
   const [form,setForm]=useState({name:"",email:"",phone:"",offer:initial||"",budget:"",message:""});
   const [errs,setErrs]=useState({});
   const [sent,setSent]=useState(false);
+  const [loading,setLoading]=useState(false);
   const upd=f=>e=>setForm(p=>({...p,[f]:e.target.value}));
   useEffect(()=>{ if(initial) setForm(p=>({...p,offer:initial})); },[initial]);
-  const submit=()=>{
+  const submit=async()=>{
     const e={};
     if(!form.name.trim()) e.name="Requis.";
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email="Email invalide.";
     if(!form.message.trim()) e.message="Décrivez votre projet.";
     setErrs(e);
-    if(!Object.keys(e).length) setSent(true);
+    if(Object.keys(e).length) return;
+    setLoading(true);
+    try {
+      const res = await fetch('https://formspree.io/f/meewvrvq', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          phone: form.phone || '(non fourni)',
+          offer: form.offer || '(non spécifié)',
+          budget: form.budget || '(non spécifié)',
+          message: form.message
+        })
+      });
+      if(res.ok) setSent(true);
+      else alert('Erreur lors de l\'envoi. Essaie à nouveau.');
+    } catch(err) {
+      alert('Erreur réseau. Essaie à nouveau.');
+    }
+    setLoading(false);
   };
   if(sent) return(
     <div className="za-ok" role="status">
@@ -910,7 +950,7 @@ function ContactForm({initial}){
         <textarea id="z-msg" className="za-ta" value={form.message} onChange={upd("message")} placeholder="Contexte, données disponibles, objectif, échéance…"/>
         {errs.message&&<div className="za-err">{errs.message}</div>}
       </div>
-      <button className="za-btn" onClick={submit}>Demander un devis</button>
+      <button className="za-btn" onClick={submit} disabled={loading}>{loading ? "Envoi..." : "Demander un devis"}</button>
     </div>
   );
 }
@@ -924,12 +964,12 @@ function Home({go}){
         <div className="za-con">
           <div className="za-hero-grid">
             <div>
-              <R><div className="za-eyebrow">Data Consultant FP&A</div></R>
+              <R><div className="za-eyebrow">Data Analyst & FP&A</div></R>
               <R delay=".07s">
                 <h1 className="za-h1">Du pipeline à <em>l'insight</em> : vos données financières, prêtes à décider.</h1>
               </R>
               <R delay=".14s">
-                <p className="za-hero-sub">Solutions analytics end-to-end pour les équipes finance : de la modélisation dbt aux dashboards Power BI.</p>
+                <p className="za-hero-sub">J'analyse vos données financières et je les transforme en dashboards clairs et en décisions concrètes. La rigueur d'un analyste finance, les outils data d'aujourd'hui.</p>
                 <div className="za-cta-row">
                   <button className="za-btn" onClick={()=>go("contact")}>Demander un devis</button>
                   <button className="za-btn-o" onClick={()=>go("portfolio")}>Voir mes projets</button>
@@ -947,11 +987,32 @@ function Home({go}){
         </div>
       </header>
 
+      <section className="za-strip">
+        <div className="za-con">
+          <R>
+            <div className="za-strip-grid">
+              <div className="za-strip-cell">
+                <h4>Vos chiffres, <span>enfin lisibles</span></h4>
+                <p>Fini les fichiers Excel à rallonge que personne n'ouvre. Vos données deviennent des dashboards où l'info utile saute aux yeux en trois secondes.</p>
+              </div>
+              <div className="za-strip-cell">
+                <h4>Un seul interlocuteur, <span>les deux casquettes</span></h4>
+                <p>Pas besoin de jongler entre un financier et un technicien. Je comprends vos enjeux métier et je sais manipuler vos données moi-même.</p>
+              </div>
+              <div className="za-strip-cell">
+                <h4>Vous repartez <span>autonome</span></h4>
+                <p>Chaque mission est documentée et expliquée. Le but n'est pas de vous rendre dépendant, mais de vous laisser un outil que votre équipe maîtrise.</p>
+              </div>
+            </div>
+          </R>
+        </div>
+      </section>
+
       <section className="za-sec">
         <div className="za-con">
           <R><div className="za-eyebrow">Expertise</div>
-          <h2 className="za-h2">Double compétence rare : data engineering × finance</h2>
-          <p className="za-lede">La plupart des consultants font soit la donnée, soit la finance. Mon métier est de tenir les deux bouts de la chaîne.</p></R>
+          <h2 className="za-h2">Double compétence rare : finance × data</h2>
+          <p className="za-lede">La plupart des consultants comprennent soit vos chiffres, soit vos outils — rarement les deux. Je parle la langue de votre DAF autant que celle de vos données, et c'est ce qui fait gagner du temps à tout le monde.</p></R>
           <R delay=".06s">
             <div className="za-pillars">
               {PILLARS.map((p,i)=>{
@@ -1152,8 +1213,8 @@ function About({go}){
             <R><div className="za-portrait" {...tilt} aria-label="Photo à venir">Z</div></R>
             <R delay=".08s">
               <div className="za-atext">
-                <p>Je suis <strong>data consultant spécialisé en FP&A</strong>. Je transforme vos données brutes en dashboards exécutifs et analyses prédictives — avec une exigence : que chaque livrable serve une décision.</p>
-                <p>Mon parcours combine <strong>data engineering</strong> (SQL, dbt, Python, BigQuery) et <strong>finance d'entreprise</strong> (budgeting, forecasting, variance analysis).</p>
+                <p>Je suis <strong>data analyst spécialisé en FP&A</strong>. Je pars de vos données financières — souvent éparpillées entre Excel, exports et outils — et j'en fais des dashboards clairs et des analyses qui éclairent vos décisions. Pas de jargon, pas de boîte noire : vous comprenez chaque chiffre.</p>
+                <p>Mon parcours combine <strong>analyse financière</strong> (budgeting, forecasting, variance analysis) et <strong>maîtrise data</strong> (SQL, Python, Power BI, et dbt pour structurer les données). Deux compétences, une seule personne en face de vous.</p>
                 <div className="za-aquote">« Les données complexes ne valent rien tant qu'elles ne deviennent pas des décisions simples. »</div>
                 <p>Je travaille avec les <strong>PME, ETI et startups</strong> pour automatiser leur reporting et accélérer leurs décisions financières — pricing accessible, process transparent.</p>
                 <div className="za-socials">
@@ -1282,7 +1343,7 @@ export default function App(){
           <div className="za-sitemap">
             <div className="za-sitemap-brand">
               <button className="za-logo" onClick={()=>go("home")}>Zafyr<span>·</span>Analytics</button>
-              <p style={{marginTop:10}}>Data Consultant FP&A — analytics end-to-end pour les équipes finance, de la modélisation dbt aux dashboards Power BI.</p>
+              <p style={{marginTop:10}}>Data Analyst & FP&A — j'analyse vos données financières et je les transforme en dashboards clairs et en décisions concrètes.</p>
             </div>
             <div>
               <h5>Navigation</h5>
